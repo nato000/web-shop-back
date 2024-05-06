@@ -13,4 +13,12 @@ export class CreateProductDto {
   @IsOptional()
   @ApiProperty()
   picture: string;
+
+  @IsNotEmpty()
+  @ApiProperty()
+  categoryId: string;
+
+  @IsNotEmpty()
+  @ApiProperty()
+  manufacturerId: string;
 }

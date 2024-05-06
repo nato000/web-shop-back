@@ -15,4 +15,12 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
   @IsOptional()
   @ApiProperty()
   picture: string;
+
+  @IsOptional()
+  @ApiProperty()
+  categoryId: string;
+
+  @IsOptional()
+  @ApiProperty()
+  manufacturerId: string;
 }

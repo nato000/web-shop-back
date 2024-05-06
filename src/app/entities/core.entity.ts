@@ -5,10 +5,10 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
-
+import { v4 as uuidv4 } from 'uuid';
 export abstract class CoreEntity extends BaseEntity {
-  @PrimaryGeneratedColumn()
-  public id: string;
+  @PrimaryGeneratedColumn('uuid')
+  public id: string = uuidv4();
 
   @Exclude()
   @CreateDateColumn({ type: 'timestamp with time zone', name: 'create_at' })
