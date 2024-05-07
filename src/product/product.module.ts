@@ -16,6 +16,6 @@ import { ManufacturerService } from 'src/manufacturer/manufacturer.service';
   ],
   controllers: [ProductController],
   providers: [ProductService, CategoryService, ManufacturerService],
-  exports: [TypeOrmModule],
+  exports: [TypeOrmModule, ProductService],
 })
 export class ProductModule {}

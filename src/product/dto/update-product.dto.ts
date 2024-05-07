@@ -14,7 +14,15 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
 
   @IsOptional()
   @ApiProperty()
-  picture: string;
+  imagePath: string;
+
+  @IsOptional()
+  @ApiProperty()
+  currency: string;
+
+  @IsOptional()
+  @ApiProperty()
+  price: number;
 
   @IsOptional()
   @ApiProperty()

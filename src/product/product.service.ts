@@ -20,12 +20,12 @@ export class ProductService {
     private manufacturerService: ManufacturerService,
   ) {}
 
-  findAll() {
-    return this.productRepository.find();
+  async findAll() {
+    return await this.productRepository.find();
   }
 
-  findOneById(id: string): Promise<Product> {
-    return this.productRepository.findOne({
+  async findOneById(id: string): Promise<Product> {
+    return await this.productRepository.findOne({
       where: { id },
     });
   }
@@ -36,8 +36,15 @@ export class ProductService {
       },
     });
 
-    const { name, description, picture, categoryId, manufacturerId } =
-      createProductDto;
+    const {
+      name,
+      description,
+      imagePath,
+      currency,
+      price,
+      categoryId,
+      manufacturerId,
+    } = createProductDto;
 
     if (existingProduct) {
       throw new ConflictException('Product with this name already exists');
@@ -56,7 +63,9 @@ export class ProductService {
     const product = this.productRepository.create({
       name: name,
       description: description,
-      picture: picture,
+      imagePath: imagePath,
+      currency: currency,
+      price: price,
       category: category, // Assign category entity
       manufacturer: manufacturer, // Assign manufacturer entity
     });
@@ -84,18 +93,22 @@ export class ProductService {
       throw new NotFoundException('Product not found');
     }
 
-    // Update the product properties if they are provided
     if (updateProductDto.name) {
       product.name = updateProductDto.name;
     }
     if (updateProductDto.description) {
       product.description = updateProductDto.description;
     }
-    if (updateProductDto.picture) {
-      product.picture = updateProductDto.picture;
+    if (updateProductDto.imagePath) {
+      product.imagePath = updateProductDto.imagePath;
+    }
+    if (updateProductDto.currency) {
+      product.currency = updateProductDto.currency;
+    }
+    if (updateProductDto.price) {
+      product.price = updateProductDto.price;
     }
 
-    // Update the manufacturer if manufacturerId is provided
     if (updateProductDto.manufacturerId) {
       const manufacturer = await this.manufacturerService.findOneById(
         updateProductDto.manufacturerId,
@@ -106,7 +119,6 @@ export class ProductService {
       product.manufacturer = manufacturer;
     }
 
-    // Update the category if categoryId is provided
     if (updateProductDto.categoryId) {
       const category = await this.categoryService.findOneById(
         updateProductDto.categoryId,

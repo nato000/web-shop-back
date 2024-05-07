@@ -10,9 +10,17 @@ export class CreateProductDto {
   @ApiProperty()
   description: string;
 
+  @IsNotEmpty()
+  @ApiProperty()
+  currency: string;
+
+  @IsNotEmpty()
+  @ApiProperty()
+  price: number;
+
   @IsOptional()
   @ApiProperty()
-  picture: string;
+  imagePath: string;
 
   @IsNotEmpty()
   @ApiProperty()
