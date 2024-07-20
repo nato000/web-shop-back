@@ -1,7 +1,7 @@
+import { Column, Entity, ManyToOne, OneToMany, Relation } from 'typeorm';
 import { CoreEntity } from 'src/app/entities/core.entity';
 import { Client } from 'src/client/entities/client.entity';
-import { Product } from 'src/product/entities/product.entity';
-import { Column, Entity, JoinTable, ManyToMany, ManyToOne } from 'typeorm';
+import { OrderItem } from './order-item.entity';
 
 @Entity({ name: 'Order' })
 export class Order extends CoreEntity {
@@ -11,17 +11,8 @@ export class Order extends CoreEntity {
   @ManyToOne(() => Client, (client) => client.orders)
   client: Client;
 
-  @ManyToMany(() => Product, (product) => product.orders)
-  @JoinTable({
-    name: 'order_product', // Specify the name of the join table
-    joinColumn: {
-      name: 'order_id', // Specify the name of the column referencing the Order entity
-    },
-    inverseJoinColumn: {
-      name: 'product_id', // Specify the name of the column referencing the Product entity
-    },
-  })
-  products: Product[];
+  @OneToMany(() => OrderItem, (orderItem) => orderItem.order, { cascade: true })
+  orderItems: Relation<OrderItem[]>;
 
   @Column({ type: 'varchar', nullable: true })
   total: string;

@@ -1,9 +1,9 @@
-import { Entity, Column, ManyToOne, ManyToMany } from 'typeorm';
+import { Entity, Column, ManyToOne, OneToMany } from 'typeorm';
 import { CoreEntity } from 'src/app/entities/core.entity';
 import { Category } from 'src/category/entities/category.entity';
 import { Manufacturer } from 'src/manufacturer/entities/manufacturer.entity';
 import { Exclude } from 'class-transformer';
-import { Order } from 'src/order/entities/order.entity';
+import { OrderItem } from 'src/order/entities/order-item.entity';
 
 @Entity({ name: 'Product' })
 export class Product extends CoreEntity {
@@ -26,12 +26,18 @@ export class Product extends CoreEntity {
   @Column({ type: 'bytea', nullable: true })
   imageData: Buffer;
 
-  @ManyToOne(() => Manufacturer, (manufacturer) => manufacturer.products)
+  @ManyToOne(() => Manufacturer, (manufacturer) => manufacturer.products, {
+    onDelete: 'CASCADE',
+  })
   manufacturer: Manufacturer;
 
-  @ManyToOne(() => Category, (category) => category.products)
+  @ManyToOne(() => Category, (category) => category.products, {
+    onDelete: 'CASCADE',
+  })
   category: Category;
 
-  @ManyToMany(() => Order, (order) => order.products)
-  orders: Order[];
+  @OneToMany(() => OrderItem, (orderItem) => orderItem.product, {
+    onDelete: 'CASCADE',
+  })
+  orderItems: OrderItem[];
 }

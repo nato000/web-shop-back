@@ -1,26 +1,22 @@
-import { Module } from '@nestjs/common';
+import { Order } from './entities/order.entity';
+import { Client } from 'src/client/entities/client.entity';
+import { OrderItem } from './entities/order-item.entity';
+import { Product } from 'src/product/entities/product.entity';
+import { forwardRef, Module } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
-import { Order } from './entities/order.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Client } from 'src/client/entities/client.entity';
-import { ClientService } from 'src/client/client.service';
-import { ProductService } from 'src/product/product.service';
-import { Product } from 'src/product/entities/product.entity';
 import { ProductModule } from 'src/product/product.module';
-import { CategoryModule } from 'src/category/category.module';
-import { ManufacturerModule } from 'src/manufacturer/manufacturer.module';
+import { ClientModule } from 'src/client/client.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order]),
-    TypeOrmModule.forFeature([Client]),
-    TypeOrmModule.forFeature([Product]),
-    ProductModule,
-    CategoryModule,
-    ManufacturerModule,
+    TypeOrmModule.forFeature([Order, OrderItem, Client, Product]),
+    forwardRef(() => ProductModule),
+    ClientModule,
   ],
   controllers: [OrderController],
-  providers: [OrderService, ClientService, ProductService],
+  providers: [OrderService],
+  exports: [OrderService],
 })
 export class OrderModule {}

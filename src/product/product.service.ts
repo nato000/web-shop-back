@@ -1,5 +1,7 @@
 import {
   ConflictException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,6 +12,7 @@ import { Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { CategoryService } from 'src/category/category.service';
 import { ManufacturerService } from 'src/manufacturer/manufacturer.service';
+import { OrderService } from 'src/order/order.service';
 
 @Injectable()
 export class ProductService {
@@ -18,6 +21,8 @@ export class ProductService {
     private productRepository: Repository<Product>,
     private categoryService: CategoryService,
     private manufacturerService: ManufacturerService,
+    @Inject(forwardRef(() => OrderService))
+    private orderService: OrderService,
   ) {}
 
   async findAll() {
@@ -29,6 +34,7 @@ export class ProductService {
       where: { id },
     });
   }
+
   async create(createProductDto: CreateProductDto) {
     const existingProduct = await this.productRepository.findOne({
       where: {
@@ -66,8 +72,8 @@ export class ProductService {
       imagePath: imagePath,
       currency: currency,
       price: price,
-      category: category, // Assign category entity
-      manufacturer: manufacturer, // Assign manufacturer entity
+      category: category,
+      manufacturer: manufacturer,
     });
     console.log('ok');
     return this.productRepository.save(product);
@@ -76,7 +82,7 @@ export class ProductService {
   async findProductById(id: string): Promise<Product> {
     const result = await this.productRepository.findOne({
       where: { id },
-      relations: ['manufacturer', 'category'], // Specify the relations to be fetched
+      relations: ['manufacturer', 'category'],
     });
     if (!result) {
       throw new NotFoundException('Product not found');
@@ -87,7 +93,7 @@ export class ProductService {
   async updateProductById(id: string, updateProductDto: UpdateProductDto) {
     const product = await this.productRepository.findOne({
       where: { id: `${id}` },
-      relations: ['manufacturer', 'category'], // Specify the relations to be fetched
+      relations: ['manufacturer', 'category'],
     });
     if (!product) {
       throw new NotFoundException('Product not found');
@@ -128,13 +134,19 @@ export class ProductService {
       }
       product.category = category;
     }
+
     return this.productRepository.save(product);
   }
 
-  async deleteProductById(id: string) {
-    const result = await this.productRepository.delete(id);
-    if (result.affected === 0) {
+  async deleteProductById(id: string): Promise<void> {
+    const product = await this.productRepository.findOne({ where: { id } });
+    if (!product) {
       throw new NotFoundException('Product not found');
     }
+
+    // Trigger the order update before product removal
+    await this.orderService.updateOrdersAfterProductDeletion(id);
+
+    await this.productRepository.remove(product);
   }
 }
