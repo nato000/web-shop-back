@@ -12,7 +12,8 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { Order } from './entities/order.entity';
 import { AddProductOrderDto } from './dto/add-products-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
-
+import { ApiTags } from '@nestjs/swagger';
+@ApiTags('Order')
 @Controller('order')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}

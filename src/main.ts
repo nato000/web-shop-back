@@ -14,20 +14,20 @@ async function bootstrap() {
     }),
   );
   const swaggerOptions = new DocumentBuilder()
-    .setTitle('University API')
-    .setDescription('This page provides University API documentation')
+    .setTitle('web-shop API')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'Authorization',
+        description: 'Authorization',
+        in: 'header',
+      },
+      'jwt',
+    )
+    .setDescription('This page provides web-shop API documentation')
     .build();
-
-  // .addBearerAuth(
-  //   {
-  //     type: 'http',
-  //     scheme: 'bearer',
-  //     bearerFormat: 'JWT',
-  //     name: 'Authorization',
-  //     description: 'Authorization',
-  //   },
-  //   'jwt',
-  // );
 
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerOptions);
   SwaggerModule.setup(`/docs`, app, swaggerDocument);
