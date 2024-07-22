@@ -32,26 +32,26 @@ export class AdminService {
   async createAdminUser(createAdminDto: CreateAdminDto) {
     const { username, email, password, roles } = createAdminDto;
 
-    const existingClient = await this.adminRepository.findOne({
+    const existingAdmin = await this.adminRepository.findOne({
       where: {
         email: email,
       },
     });
 
-    if (existingClient) {
-      throw new ConflictException('Client with this email already exists');
+    if (existingAdmin) {
+      throw new ConflictException('Admin with this email already exists');
     }
 
     const hashedPassword = await hashPassword(password);
 
-    const client = this.adminRepository.create({
+    const admin = this.adminRepository.create({
       username: username,
       email: email,
       password: hashedPassword,
       roles: roles,
     });
     console.log('ok');
-    return this.adminRepository.save(client);
+    return this.adminRepository.save(admin);
   }
 
   async findByEmail(email: string): Promise<AdminUser | undefined> {

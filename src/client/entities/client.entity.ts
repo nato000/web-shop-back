@@ -1,6 +1,7 @@
 import { Exclude } from 'class-transformer';
 import { CoreEntity } from 'src/app/entities/core.entity';
 import { Order } from 'src/order/entities/order.entity';
+import { Role } from 'src/roles/enums/role.enum';
 import { Column, Entity, OneToMany } from 'typeorm';
 
 @Entity({ name: 'Client' })
@@ -27,4 +28,7 @@ export class Client extends CoreEntity {
 
   @OneToMany(() => Order, (order) => order.client)
   orders: Order[];
+
+  @Column({ type: 'simple-array', nullable: false })
+  roles: Role[];
 }

@@ -18,7 +18,9 @@ import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { RolesGuard } from 'src/roles/guards/roles.guard';
 
 @ApiTags('Category')
+@ApiBearerAuth('jwt')
 @Controller('category')
+@UseGuards(AuthGuard, RolesGuard)
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
@@ -29,8 +31,6 @@ export class CategoryController {
   }
 
   @Get()
-  @UseGuards(AuthGuard, RolesGuard)
-  @ApiBearerAuth('jwt')
   @Roles(Role.Admin)
   findAll() {
     return this.categoryService.findAll();

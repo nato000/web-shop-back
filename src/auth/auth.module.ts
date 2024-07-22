@@ -6,10 +6,12 @@ import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from './constants/auth.constansts';
 import { ResetTokenModule } from 'src/reset-token/reset-token.module';
 import { AuthGuard } from './guards/auth.guard';
+import { ClientModule } from 'src/client/client.module';
 
 @Module({
   imports: [
     AdminModule,
+    ClientModule,
     JwtModule.register({
       global: true,
       secret: jwtConstants.secret,

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsEmail, IsNotEmpty } from 'class-validator';
+import { Role } from 'src/roles/enums/role.enum';
 
 export class CreateClientDto {
   @IsNotEmpty()
@@ -19,7 +20,5 @@ export class CreateClientDto {
   @ApiProperty()
   password: string;
 
-  @IsOptional()
-  @ApiProperty()
-  imagePath: string;
+  roles: Role[];
 }

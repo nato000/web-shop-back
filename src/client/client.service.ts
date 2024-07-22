@@ -27,8 +27,8 @@ export class ClientService {
     });
   }
 
-  async create(createClientDto: CreateClientDto) {
-    const { name, surname, email, password, imagePath } = createClientDto;
+  async createClient(createClientDto: CreateClientDto) {
+    const { name, surname, email, password, roles } = createClientDto;
 
     const existingClient = await this.clientRepository.findOne({
       where: {
@@ -47,7 +47,7 @@ export class ClientService {
       surname: surname,
       email: email,
       password: hashedPassword,
-      imagePath: imagePath,
+      roles: roles,
     });
     console.log('ok');
     return this.clientRepository.save(client);
@@ -61,6 +61,16 @@ export class ClientService {
       throw new NotFoundException('Client not found');
     }
     return result;
+  }
+
+  async findByEmail(email: string): Promise<Client | undefined> {
+    const admin = await this.clientRepository.findOneBy({
+      email: email,
+    });
+    if (!admin) {
+      throw new NotFoundException('Email not found');
+    }
+    return admin;
   }
 
   async updateClientById(id: string, updateClientDto: UpdateClientDto) {
