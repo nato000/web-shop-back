@@ -24,7 +24,7 @@ async function bootstrap() {
         description: 'Authorization',
         in: 'header',
       },
-      'jwt',
+      'JWT',
     )
     .setDescription('This page provides web-shop API documentation')
     .build();

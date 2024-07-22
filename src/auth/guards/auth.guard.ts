@@ -16,7 +16,7 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
     if (!token) {
-      console.error('No token found'); // Debugging
+      console.error('No token found in headers:', request.headers); // Debugging
       throw new UnauthorizedException();
     }
     try {
@@ -34,7 +34,15 @@ export class AuthGuard implements CanActivate {
   }
 
   private extractTokenFromHeader(request: Request): string | undefined {
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
-    return type === 'Bearer' ? token : undefined;
+    const authorization = request.headers.authorization;
+    console.log('Authorization header:', authorization); // Debugging
+    if (!authorization) {
+      return undefined;
+    }
+    const [type, token] = authorization.split(' ');
+    if (type !== 'Bearer') {
+      return undefined;
+    }
+    return token;
   }
 }
