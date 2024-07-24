@@ -17,6 +17,15 @@ export class ClientService {
     private clientRepository: Repository<Client>,
   ) {}
 
+  public async findCurrentUser(clientId: string) {
+    const client = await this.findOneById(clientId);
+    delete client.password;
+    if (!client) {
+      throw new NotFoundException(`Client is not found`);
+    }
+    return client;
+  }
+
   findAll() {
     return this.clientRepository.find();
   }

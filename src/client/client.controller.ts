@@ -6,16 +6,29 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { ClientService } from './client.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from 'src/auth/guards/auth.guard';
+import { RolesGuard } from 'src/roles/guards/roles.guard';
+import { CurrentUser } from 'src/auth/decorators/current.user.decorator';
+import { Client } from './entities/client.entity';
 
 @ApiTags('Client')
+@UseGuards(AuthGuard, RolesGuard)
 @Controller('client')
+@ApiBearerAuth('JWT')
 export class ClientController {
   constructor(private readonly clientService: ClientService) {}
+
+  @Get('current-client')
+  public async findMe(@CurrentUser() clientLogged: Client) {
+    const response = await this.clientService.findCurrentUser(clientLogged.id);
+    return response;
+  }
 
   @Post()
   create(@Body() createClientDto: CreateClientDto) {

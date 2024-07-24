@@ -17,12 +17,21 @@ export class AdminService {
     private readonly adminRepository: Repository<AdminUser>,
   ) {}
 
+  public async findCurrentUser(adminId: string) {
+    const admin = await this.getAdminById(adminId);
+    delete admin.password;
+    if (!admin) {
+      throw new NotFoundException(`Admin is not found`);
+    }
+    return admin;
+  }
+
   async getAllAdmins(): Promise<AdminUser[]> {
     return await this.adminRepository.find();
   }
 
-  async getAdminsById(id: string): Promise<AdminUser[]> {
-    return await this.adminRepository.find({
+  async getAdminById(id: string): Promise<AdminUser> {
+    return await this.adminRepository.findOne({
       where: {
         id: id,
       },
