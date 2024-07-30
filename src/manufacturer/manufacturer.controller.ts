@@ -46,7 +46,7 @@ export class ManufacturerController {
     @Param('id') id: string,
     @Body() updateManufacturerDto: UpdateManufacturerDto,
   ) {
-    return this.manufacturerService.updateProductById(
+    return this.manufacturerService.updateManufacturerById(
       id,
       updateManufacturerDto,
     );
@@ -55,6 +55,6 @@ export class ManufacturerController {
   @Delete(':id')
   @Roles(Role.Admin)
   deleteProductById(@Param('id') id: string) {
-    return this.manufacturerService.deleteProductById(id);
+    return this.manufacturerService.deleteManufacturerById(id);
   }
 }

@@ -8,7 +8,6 @@ import { AdminService } from 'src/admin/admin.service';
 import { ResetTokenService } from 'src/reset-token/reset-token.service';
 import { isPasswordCorrect } from 'src/utils/password-hash';
 import { SignResponseDto } from './dto/sign.response.dto';
-import { ResetTokenInterface } from 'src/reset-token/interfaces/reset-token.interface';
 import { ResetPasswordWithTokenRequestDto } from './dto/reset-password-with-token.request.dto';
 import { Role } from 'src/roles/enums/role.enum';
 import { ClientService } from 'src/client/client.service';
@@ -22,20 +21,13 @@ export class AuthService {
     private resetTokenService: ResetTokenService,
   ) {}
 
-  async adminSignIn(email: string, pass: string): Promise<any> {
+  async adminSignIn(email: string, pass: string): Promise<SignResponseDto> {
     const user = await this.adminService.findByEmail(email);
-
-    if (!(await isPasswordCorrect(pass, user.password))) {
-      throw new UnauthorizedException('Password incorrect');
+    if (!user || !(await isPasswordCorrect(pass, user.password))) {
+      throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = {
-      id: user.id,
-      email: user.email,
-      roles: user.roles, // Include roles in the payload
-    };
-
-    console.log('SignIn Payload:', payload);
+    const payload = { id: user.id, email: user.email, roles: user.roles };
     return {
       accessToken: await this.jwtService.signAsync(payload),
     };
@@ -47,73 +39,54 @@ export class AuthService {
     pass: string,
   ): Promise<SignResponseDto> {
     const newUser = await this.adminService.createAdminUser({
-      username: username,
-      email: email,
+      username,
+      email,
       password: pass,
-      roles: [Role.Admin], // Set default role
+      roles: [Role.Admin],
     });
     const payload = {
       id: newUser.id,
       email: newUser.email,
       roles: newUser.roles,
     };
-    console.log('SignUp Payload:', payload);
     return {
       accessToken: await this.jwtService.signAsync(payload),
     };
   }
 
-  public async adminResetPasswordRequest(
-    email: string,
-  ): Promise<ResetTokenInterface> {
+  public async adminResetPasswordRequest(email: string): Promise<void> {
     const user = await this.adminService.findByEmail(email);
     if (!user) {
-      throw new BadRequestException(
-        `Cannot generate token for reset password request  because user with email:${email} is not found`,
-      );
+      throw new BadRequestException(`User with email ${email} not found`);
     }
     const token = await this.resetTokenService.generateResetToken(email);
-
-    // await this.mailerService.sendEmail(email, 'password reset', token.token);
-
-    return;
+    // await this.mailerService.sendEmail(email, 'Password Reset', token.token);
   }
 
   public async adminResetPassword(
     token: string,
-    resetPasswordWithTokenRequestDto: ResetPasswordWithTokenRequestDto,
+    resetPasswordDto: ResetPasswordWithTokenRequestDto,
   ): Promise<void> {
-    const { newPassword } = resetPasswordWithTokenRequestDto;
-    const resetPasswordRequest =
-      await this.resetTokenService.getResetToken(token);
-    if (!resetPasswordRequest) {
-      throw new BadRequestException(`There is no request password request`);
+    const { newPassword } = resetPasswordDto;
+    const resetRequest = await this.resetTokenService.getResetToken(token);
+    if (!resetRequest) {
+      throw new BadRequestException('Invalid or expired reset token');
     }
-    const user = await this.adminService.findByEmail(
-      resetPasswordRequest.email,
-    );
+    const user = await this.adminService.findByEmail(resetRequest.email);
     if (!user) {
-      throw new BadRequestException(`user is not found`);
+      throw new BadRequestException('User not found');
     }
-
     await this.adminService.updateAdminPasswordById(user.id, newPassword);
     await this.resetTokenService.removeResetToken(token);
   }
 
-  async userSignIn(email: string, pass: string): Promise<any> {
+  async userSignIn(email: string, pass: string): Promise<SignResponseDto> {
     const user = await this.clientService.findByEmail(email);
-
-    if (!(await isPasswordCorrect(pass, user.password))) {
-      throw new UnauthorizedException('Password incorrect');
+    if (!user || !(await isPasswordCorrect(pass, user.password))) {
+      throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = {
-      id: user.id,
-      email: user.email,
-      roles: user.roles, // Include roles in the payload
-    };
-
-    console.log('SignIn Payload:', payload);
+    const payload = { id: user.id, email: user.email, roles: user.roles };
     return {
       accessToken: await this.jwtService.signAsync(payload),
     };
@@ -126,56 +99,44 @@ export class AuthService {
     pass: string,
   ): Promise<SignResponseDto> {
     const newUser = await this.clientService.createClient({
-      name: name,
-      surname: surname,
-      email: email,
+      name,
+      surname,
+      email,
       password: pass,
-      roles: [Role.User], // Set default role
+      roles: [Role.User],
     });
     const payload = {
       id: newUser.id,
       email: newUser.email,
       roles: newUser.roles,
     };
-    console.log('SignUp Payload:', payload);
     return {
       accessToken: await this.jwtService.signAsync(payload),
     };
   }
 
-  public async userResetPasswordRequest(
-    email: string,
-  ): Promise<ResetTokenInterface> {
+  public async userResetPasswordRequest(email: string): Promise<void> {
     const user = await this.clientService.findByEmail(email);
     if (!user) {
-      throw new BadRequestException(
-        `Cannot generate token for reset password request  because user with email:${email} is not found`,
-      );
+      throw new BadRequestException(`User with email ${email} not found`);
     }
     const token = await this.resetTokenService.generateResetToken(email);
-
-    // await this.mailerService.sendEmail(email, 'password reset', token.token);
-
-    return;
+    // await this.mailerService.sendEmail(email, 'Password Reset', token.token);
   }
 
   public async userResetPassword(
     token: string,
-    resetPasswordWithTokenRequestDto: ResetPasswordWithTokenRequestDto,
+    resetPasswordDto: ResetPasswordWithTokenRequestDto,
   ): Promise<void> {
-    const { newPassword } = resetPasswordWithTokenRequestDto;
-    const resetPasswordRequest =
-      await this.resetTokenService.getResetToken(token);
-    if (!resetPasswordRequest) {
-      throw new BadRequestException(`There is no request password request`);
+    const { newPassword } = resetPasswordDto;
+    const resetRequest = await this.resetTokenService.getResetToken(token);
+    if (!resetRequest) {
+      throw new BadRequestException('Invalid or expired reset token');
     }
-    const user = await this.clientService.findByEmail(
-      resetPasswordRequest.email,
-    );
+    const user = await this.clientService.findByEmail(resetRequest.email);
     if (!user) {
-      throw new BadRequestException(`user is not found`);
+      throw new BadRequestException('User not found');
     }
-
     await this.clientService.updateClientPasswordById(user.id, newPassword);
     await this.resetTokenService.removeResetToken(token);
   }

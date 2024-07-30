@@ -5,49 +5,46 @@ import {
 } from '@nestjs/common';
 import { CreateManufacturerDto } from './dto/create-manufacturer.dto';
 import { UpdateManufacturerDto } from './dto/update-manufacturer.dto';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectModel } from '@nestjs/sequelize';
 import { Manufacturer } from './entities/manufacturer.entity';
-import { Repository } from 'typeorm';
 
 @Injectable()
 export class ManufacturerService {
   constructor(
-    @InjectRepository(Manufacturer)
-    private manufacturerRepository: Repository<Manufacturer>,
+    @InjectModel(Manufacturer)
+    private manufacturerModel: typeof Manufacturer,
   ) {}
 
-  findAll() {
-    return this.manufacturerRepository.find();
+  async findAll() {
+    return this.manufacturerModel.findAll();
   }
 
-  findOneById(id: string): Promise<Manufacturer> {
-    return this.manufacturerRepository.findOne({
-      where: { id },
-    });
+  async findOneById(id: string): Promise<Manufacturer> {
+    return this.manufacturerModel.findByPk(id);
   }
 
   async create(createManufacturerDto: CreateManufacturerDto) {
     const { name, description } = createManufacturerDto;
-    const manufacturer = {
-      name: name,
-      description: description,
-    };
 
-    const existingManufacturer = await this.manufacturerRepository.findOne({
+    const existingManufacturer = await this.manufacturerModel.findOne({
       where: {
-        name: createManufacturerDto.name,
+        name: name,
       },
     });
+
     if (existingManufacturer) {
       throw new ConflictException('Manufacturer with this name already exists');
     }
-    return this.manufacturerRepository.save(manufacturer);
+
+    return this.manufacturerModel.create({
+      name,
+      description,
+    });
   }
 
   async findManufacturerById(id: string): Promise<Manufacturer> {
-    const result = await this.manufacturerRepository.findOne({
-      where: { id },
-      relations: ['products'], // Specify the relations to be fetched
+    const result = await this.manufacturerModel.findByPk(id, {
+      include: ['products'], // Specify the relations to be fetched
     });
     if (!result) {
       throw new NotFoundException('Manufacturer not found');
@@ -55,31 +52,36 @@ export class ManufacturerService {
     return result;
   }
 
-  async updateProductById(
+  async updateManufacturerById(
     id: string,
     updateManufacturerDto: UpdateManufacturerDto,
   ) {
-    const manufacturer = await this.manufacturerRepository.findOne({
-      where: { id },
-      relations: ['products'], // Specify the relations to be fetched
+    const manufacturer = await this.manufacturerModel.findByPk(id, {
+      include: ['products'], // Specify the relations to be fetched
     });
+
     if (!manufacturer) {
       throw new NotFoundException('Manufacturer not found');
     }
+
     if (updateManufacturerDto.name) {
       manufacturer.name = updateManufacturerDto.name;
     }
     if (updateManufacturerDto.description) {
       manufacturer.description = updateManufacturerDto.description;
     }
-    return this.manufacturerRepository.save(manufacturer);
+
+    await manufacturer.save(); // Save the updated manufacturer
+    return manufacturer;
   }
 
-  async deleteProductById(id: string) {
-    const result = await this.manufacturerRepository.delete({
-      id,
+  async deleteManufacturerById(id: string) {
+    const result = await this.manufacturerModel.destroy({
+      where: {
+        id,
+      },
     });
-    if (result.affected === 0) {
+    if (result === 0) {
       throw new NotFoundException('Manufacturer not found');
     }
   }

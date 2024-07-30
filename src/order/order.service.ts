@@ -6,37 +6,40 @@ import {
 } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { AddProductOrderDto } from './dto/add-products-order.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectModel } from '@nestjs/sequelize';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
-import { Order } from './entities/order.entity';
-import { OrderItem } from './entities/order-item.entity';
 import { ClientService } from 'src/client/client.service';
 import { ProductService } from 'src/product/product.service';
+import { Order } from './entities/order.entity';
+import { OrderItem } from './entities/order-item.entity';
+import { Product } from 'src/product/entities/product.entity';
 
 @Injectable()
 export class OrderService {
   constructor(
-    @InjectRepository(Order)
-    private readonly orderRepository: Repository<Order>,
-    @InjectRepository(OrderItem)
-    private readonly orderItemRepository: Repository<OrderItem>,
+    @InjectModel(Order)
+    private readonly orderModel: typeof Order,
+    @InjectModel(OrderItem)
+    private readonly orderItemModel: typeof OrderItem,
     private clientService: ClientService,
     @Inject(forwardRef(() => ProductService))
     private productService: ProductService,
   ) {}
 
   async findAll(): Promise<Order[]> {
-    return this.orderRepository.find({
-      relations: ['client', 'orderItems', 'orderItems.product'],
+    return this.orderModel.findAll({
+      include: [{ model: OrderItem, include: [Product] }, 'client'],
     });
   }
 
   async findOneById(id: string): Promise<Order> {
-    return await this.orderRepository.findOne({
-      where: { id },
-      relations: ['orderItems', 'orderItems.product'],
+    const order = await this.orderModel.findByPk(id, {
+      include: [{ model: OrderItem, include: [Product] }, 'client'],
     });
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+    return order;
   }
 
   async create(createOrderDto: CreateOrderDto): Promise<Order> {
@@ -47,42 +50,31 @@ export class OrderService {
       throw new NotFoundException('Client not found');
     }
 
-    const order = this.orderRepository.create({
-      status,
-      client: orderClient,
-      total: '0',
-      orderItems: [],
-    });
-
     let productTotal = 0;
 
-    for (const productId of productIds) {
-      const product = await this.productService.findOneById(productId);
-      if (!product) {
-        throw new NotFoundException(`Product with ID ${productId} not found`);
-      }
-      productTotal += Number(product.price);
+    const orderItems = await Promise.all(
+      productIds.map(async (productId) => {
+        const product = await this.productService.findOneById(productId);
+        if (!product) {
+          throw new NotFoundException(`Product with ID ${productId} not found`);
+        }
+        productTotal += Number(product.price);
 
-      const orderItem = this.orderItemRepository.create({
-        product,
-        quantity: 1, // Default to 1, can be modified later
-      });
+        return this.orderItemModel.create({
+          productId,
+          quantity: 1, // Default to 1, can be modified later
+        });
+      }),
+    );
 
-      order.orderItems.push(orderItem);
-    }
-
-    order.total = `${productTotal}`;
-    return this.orderRepository.save(order);
-  }
-
-  async findOneOrderById(id: string): Promise<Order> {
-    const order = await this.orderRepository.findOne({
-      where: { id },
-      relations: ['client', 'orderItems', 'orderItems.product'],
+    const order = await this.orderModel.create({
+      status,
+      clientId,
+      total: `${productTotal}`,
     });
-    if (!order) {
-      throw new NotFoundException(`Order with id ${id} not found`);
-    }
+
+    await order.$set('orderItems', orderItems); // Associate order items with the order
+
     return order;
   }
 
@@ -98,7 +90,8 @@ export class OrderService {
     }
 
     order.status = status;
-    return this.orderRepository.save(order);
+    await order.save(); // Save the updated order
+    return order;
   }
 
   async addProductsToOrder(
@@ -108,63 +101,70 @@ export class OrderService {
     const { productIds } = addProductOrderDto;
 
     // Find the order
-    const order = await this.orderRepository.findOne({
-      where: { id },
-      relations: ['orderItems', 'orderItems.product'],
+    const order = await this.orderModel.findByPk(id, {
+      include: [{ model: OrderItem, include: [Product] }],
     });
     if (!order) {
       throw new NotFoundException(`Order with id ${id} not found`);
     }
 
-    // Find and validate products
     let productTotal = Number(order.total);
 
-    for (const productId of productIds) {
-      const product = await this.productService.findOneById(productId);
-      if (!product) {
-        throw new NotFoundException(`Product with ID ${productId} not found`);
-      }
-      productTotal += Number(product.price);
+    const orderItems = await Promise.all(
+      productIds.map(async (productId) => {
+        const product = await this.productService.findOneById(productId);
+        if (!product) {
+          throw new NotFoundException(`Product with ID ${productId} not found`);
+        }
+        productTotal += Number(product.price);
 
-      const existingOrderItem = order.orderItems.find(
-        (item) => item.product.id === productId,
-      );
+        const existingOrderItem = order.orderItems.find(
+          (item) => item.productId === productId,
+        );
 
-      if (existingOrderItem) {
-        existingOrderItem.quantity += 1;
-      } else {
-        const orderItem = this.orderItemRepository.create({
-          product,
-          quantity: 1,
-        });
-        order.orderItems.push(orderItem);
-      }
-    }
+        if (existingOrderItem) {
+          existingOrderItem.quantity += 1;
+          await existingOrderItem.save();
+          return existingOrderItem;
+        } else {
+          return this.orderItemModel.create({
+            productId,
+            quantity: 1,
+          });
+        }
+      }),
+    );
 
     order.total = `${productTotal}`;
+    await order.save(); // Save the updated order
+    await order.$set('orderItems', orderItems); // Update order items association
 
-    return this.orderRepository.save(order);
+    return order;
   }
 
   async remove(id: string): Promise<void> {
     const order = await this.findOneById(id);
-    await this.orderRepository.remove(order);
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    await order.destroy(); // Remove the order
   }
 
   async updateOrdersAfterProductDeletion(productId: string): Promise<void> {
-    const orders = await this.orderRepository.find({
-      relations: ['orderItems', 'orderItems.product'],
+    const orders = await this.orderModel.findAll({
+      include: [{ model: OrderItem, include: [Product] }],
     });
 
     for (const order of orders) {
       const itemsToRemove = order.orderItems.filter(
-        (item) => item.product.id === productId,
+        (item) => item.productId === productId,
       );
 
       if (itemsToRemove.length > 0) {
         // Remove the items from the order and recalculate the total
         order.orderItems = order.orderItems.filter(
-          (item) => item.product.id !== productId,
+          (item) => item.productId !== productId,
         );
 
         let newTotal = 0;
@@ -173,7 +173,7 @@ export class OrderService {
         }
 
         order.total = `${newTotal}`;
-        await this.orderRepository.save(order);
+        await order.save(); // Save the updated order
       }
     }
   }

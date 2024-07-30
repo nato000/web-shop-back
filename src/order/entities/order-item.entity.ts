@@ -1,19 +1,25 @@
-import { Entity, Column, ManyToOne, Relation } from 'typeorm';
+// src/order/entities/order-item.entity.ts
+import { Table, Column, ForeignKey, BelongsTo } from 'sequelize-typescript';
 import { CoreEntity } from 'src/app/entities/core.entity';
 import { Product } from 'src/product/entities/product.entity';
 import { Order } from './order.entity';
 
-@Entity({ name: 'OrderItem' })
+@Table({ tableName: 'order_items' })
 export class OrderItem extends CoreEntity {
-  @Column({ type: 'int', nullable: false })
+  @Column({ allowNull: false })
   quantity: number;
 
-  @ManyToOne(() => Product, (product) => product.orderItems, {
-    onDelete: 'CASCADE',
-    eager: true,
-  })
+  @ForeignKey(() => Product)
+  @Column
+  productId: string;
+
+  @BelongsTo(() => Product)
   product: Product;
 
-  @ManyToOne(() => Order, (order) => order.orderItems, { onDelete: 'CASCADE' })
-  order: Relation<Order>;
+  @ForeignKey(() => Order)
+  @Column
+  orderId: string;
+
+  @BelongsTo(() => Order)
+  order: Order;
 }

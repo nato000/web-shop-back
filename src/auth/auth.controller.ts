@@ -10,8 +10,6 @@ import { AuthService } from './auth.service';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SignRequestDto } from './dto/sign.request.dto';
 import { SignResponseDto } from './dto/sign.response.dto';
-import { ResetPasswordResponseDto } from './dto/reset-password.response.dto';
-import { ResetPasswordRequestDto } from './dto/reset-password.request.dto';
 import { ResetPasswordWithTokenRequestDto } from './dto/reset-password-with-token.request.dto';
 import {
   SignUPAdminRequestDto,
@@ -23,43 +21,21 @@ import {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @ApiOperation({ summary: 'Sign in' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    isArray: true,
-    type: SignResponseDto,
-    description: 'Access token',
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'Unauthorized exception',
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Something went wrong',
-  })
+  @ApiOperation({ summary: 'Sign in as admin' })
+  @ApiResponse({ status: HttpStatus.OK, type: SignResponseDto })
   @HttpCode(HttpStatus.OK)
-  @Post('admin-sign-in')
-  public adminSignIn(
+  @Post('admin/signin')
+  async adminSignIn(
     @Body() signInDto: SignRequestDto,
   ): Promise<SignResponseDto> {
     return this.authService.adminSignIn(signInDto.email, signInDto.password);
   }
 
-  @ApiOperation({ summary: 'Sign up' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    isArray: true,
-    type: SignResponseDto,
-    description: 'Access token',
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Something went wrong',
-  })
-  @HttpCode(HttpStatus.OK)
-  @Post('admin-sign-up')
-  public adminSignUp(
+  @ApiOperation({ summary: 'Sign up as admin' })
+  @ApiResponse({ status: HttpStatus.CREATED, type: SignResponseDto })
+  @HttpCode(HttpStatus.CREATED)
+  @Post('admin/signup')
+  async adminSignUp(
     @Body() signUpDto: SignUPAdminRequestDto,
   ): Promise<SignResponseDto> {
     return this.authService.adminSignUp(
@@ -69,81 +45,40 @@ export class AuthController {
     );
   }
 
-  @ApiOperation({ summary: 'Reset password request' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    isArray: true,
-    type: ResetPasswordResponseDto,
-    description: 'Reset token',
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Something went wrong',
-  })
-  @HttpCode(HttpStatus.OK)
-  @Post('admin-reset-password-request')
-  public adminResetPasswordRequest(
-    @Body() resetPasswordDto: ResetPasswordRequestDto,
-  ): Promise<ResetPasswordResponseDto> {
-    return this.authService.adminResetPasswordRequest(resetPasswordDto.email);
+  @ApiOperation({ summary: 'Request password reset for admin' })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('admin/reset-password')
+  async adminResetPasswordRequest(@Body('email') email: string): Promise<void> {
+    return this.authService.adminResetPasswordRequest(email);
   }
 
-  @ApiOperation({ summary: 'Reset password' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    isArray: true,
-    description: 'Reset password',
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Something went wrong',
-  })
+  @ApiOperation({ summary: 'Reset admin password' })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Post('admin-reset-password/:token')
-  public adminResetPassword(
+  @Post('admin/reset-password/:token')
+  async adminResetPassword(
     @Param('token') token: string,
     @Body() resetPasswordDto: ResetPasswordWithTokenRequestDto,
   ): Promise<void> {
     return this.authService.adminResetPassword(token, resetPasswordDto);
   }
 
-  @ApiOperation({ summary: 'Sign in' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    isArray: true,
-    type: SignResponseDto,
-    description: 'Access token',
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'Unauthorized exception',
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Something went wrong',
-  })
+  @ApiOperation({ summary: 'Sign in as user' })
+  @ApiResponse({ status: HttpStatus.OK, type: SignResponseDto })
   @HttpCode(HttpStatus.OK)
-  @Post('user-sign-in')
-  public userSignIn(
+  @Post('user/signin')
+  async userSignIn(
     @Body() signInDto: SignRequestDto,
   ): Promise<SignResponseDto> {
     return this.authService.userSignIn(signInDto.email, signInDto.password);
   }
 
-  @ApiOperation({ summary: 'Sign up' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    isArray: true,
-    type: SignResponseDto,
-    description: 'Access token',
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Something went wrong',
-  })
-  @HttpCode(HttpStatus.OK)
-  @Post('user-sign-up')
-  public userSignUp(
+  @ApiOperation({ summary: 'Sign up as user' })
+  @ApiResponse({ status: HttpStatus.CREATED, type: SignResponseDto })
+  @HttpCode(HttpStatus.CREATED)
+  @Post('user/signup')
+  async userSignUp(
     @Body() signUpDto: SignUPClientRequestDto,
   ): Promise<SignResponseDto> {
     return this.authService.userSignUp(
@@ -153,38 +88,20 @@ export class AuthController {
       signUpDto.password,
     );
   }
-  @ApiOperation({ summary: 'Reset password request' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    isArray: true,
-    type: ResetPasswordResponseDto,
-    description: 'Reset token',
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Something went wrong',
-  })
-  @HttpCode(HttpStatus.OK)
-  @Post('user-reset-password-request')
-  public userResetPasswordRequest(
-    @Body() resetPasswordDto: ResetPasswordRequestDto,
-  ): Promise<ResetPasswordResponseDto> {
-    return this.authService.userResetPasswordRequest(resetPasswordDto.email);
+
+  @ApiOperation({ summary: 'Request password reset for user' })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('user/reset-password')
+  async userResetPasswordRequest(@Body('email') email: string): Promise<void> {
+    return this.authService.userResetPasswordRequest(email);
   }
 
-  @ApiOperation({ summary: 'Reset password' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    isArray: true,
-    description: 'Reset password',
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Something went wrong',
-  })
+  @ApiOperation({ summary: 'Reset user password' })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Post('user-reset-password/:token')
-  public userResetPassword(
+  @Post('user/reset-password/:token')
+  async userResetPassword(
     @Param('token') token: string,
     @Body() resetPasswordDto: ResetPasswordWithTokenRequestDto,
   ): Promise<void> {

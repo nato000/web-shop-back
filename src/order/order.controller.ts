@@ -40,7 +40,7 @@ export class OrderController {
   @Get(':id')
   @Roles(Role.Admin)
   findOneOrderById(@Param('id') id: string): Promise<Order> {
-    return this.orderService.findOneOrderById(id);
+    return this.orderService.findOneById(id);
   }
 
   @Patch('/status/:id')

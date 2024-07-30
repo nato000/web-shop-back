@@ -1,34 +1,39 @@
-import { Exclude } from 'class-transformer';
+import { Table, Column, HasMany } from 'sequelize-typescript';
 import { CoreEntity } from 'src/app/entities/core.entity';
 import { Order } from 'src/order/entities/order.entity';
 import { Role } from 'src/roles/enums/role.enum';
-import { Column, Entity, OneToMany } from 'typeorm';
 
-@Entity({ name: 'Client' })
+@Table({ tableName: 'clients' })
 export class Client extends CoreEntity {
-  @Column({ type: 'varchar', nullable: false })
+  @Column({ allowNull: false })
   name: string;
 
-  @Column({ type: 'varchar', nullable: false })
+  @Column({ allowNull: false })
   surname: string;
 
-  @Column({ type: 'varchar', nullable: false })
+  @Column({ allowNull: false })
   email: string;
 
-  @Exclude()
-  @Column({ type: 'varchar', nullable: false })
+  @Column({ allowNull: false })
   password: string;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column
   imagePath: string;
 
-  @Exclude()
-  @Column({ type: 'bytea', nullable: true })
+  @Column('bytea')
   imageData: Buffer;
 
-  @OneToMany(() => Order, (order) => order.client)
+  @HasMany(() => Order)
   orders: Order[];
 
-  @Column({ type: 'simple-array', nullable: false })
+  @Column({
+    type: 'varchar', // Consider using 'jsonb' or array type if supported
+    get() {
+      return (this.getDataValue('roles')?.split(';') as Role[]) || [];
+    },
+    set(val: Role[]) {
+      this.setDataValue('roles', val.join(';'));
+    },
+  })
   roles: Role[];
 }

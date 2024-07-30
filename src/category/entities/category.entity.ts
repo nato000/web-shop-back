@@ -1,15 +1,16 @@
+// src/category/entities/category.entity.ts
+import { Table, Column, HasMany } from 'sequelize-typescript';
 import { CoreEntity } from 'src/app/entities/core.entity';
 import { Product } from 'src/product/entities/product.entity';
-import { Column, Entity, OneToMany } from 'typeorm';
 
-@Entity({ name: 'Category' })
+@Table({ tableName: 'categories' })
 export class Category extends CoreEntity {
-  @Column({ type: 'varchar', nullable: false })
+  @Column({ allowNull: false })
   name: string;
 
-  @Column({ type: 'varchar', nullable: false })
+  @Column({ allowNull: false })
   description: string;
 
-  @OneToMany(() => Product, (product) => product.category)
+  @HasMany(() => Product)
   products: Product[];
 }

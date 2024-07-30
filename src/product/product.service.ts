@@ -7,18 +7,19 @@ import {
 } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Product } from './entities/product.entity';
+import { InjectModel } from '@nestjs/sequelize';
 import { CategoryService } from 'src/category/category.service';
 import { ManufacturerService } from 'src/manufacturer/manufacturer.service';
 import { OrderService } from 'src/order/order.service';
+import { Product } from './entities/product.entity';
+import { Manufacturer } from 'src/manufacturer/entities/manufacturer.entity';
+import { Category } from 'src/category/entities/category.entity';
 
 @Injectable()
 export class ProductService {
   constructor(
-    @InjectRepository(Product)
-    private productRepository: Repository<Product>,
+    @InjectModel(Product)
+    private productModel: typeof Product,
     private categoryService: CategoryService,
     private manufacturerService: ManufacturerService,
     @Inject(forwardRef(() => OrderService))
@@ -26,17 +27,15 @@ export class ProductService {
   ) {}
 
   async findAll() {
-    return await this.productRepository.find();
+    return this.productModel.findAll();
   }
 
   async findOneById(id: string): Promise<Product> {
-    return await this.productRepository.findOne({
-      where: { id },
-    });
+    return this.productModel.findByPk(id);
   }
 
   async create(createProductDto: CreateProductDto) {
-    const existingProduct = await this.productRepository.findOne({
+    const existingProduct = await this.productModel.findOne({
       where: {
         name: createProductDto.name,
       },
@@ -66,23 +65,22 @@ export class ProductService {
     if (!manufacturer) {
       throw new NotFoundException('Manufacturer not found');
     }
-    const product = this.productRepository.create({
-      name: name,
-      description: description,
-      imagePath: imagePath,
-      currency: currency,
-      price: price,
-      category: category,
-      manufacturer: manufacturer,
+
+    const product = await this.productModel.create({
+      name,
+      description,
+      imagePath,
+      currency,
+      price,
+      categoryId,
+      manufacturerId,
     });
-    console.log('ok');
-    return this.productRepository.save(product);
+    return product;
   }
 
   async findProductById(id: string): Promise<Product> {
-    const result = await this.productRepository.findOne({
-      where: { id },
-      relations: ['manufacturer', 'category'],
+    const result = await this.productModel.findByPk(id, {
+      include: [Manufacturer, Category], // Specify the relations to be fetched
     });
     if (!result) {
       throw new NotFoundException('Product not found');
@@ -91,10 +89,10 @@ export class ProductService {
   }
 
   async updateProductById(id: string, updateProductDto: UpdateProductDto) {
-    const product = await this.productRepository.findOne({
-      where: { id: `${id}` },
-      relations: ['manufacturer', 'category'],
+    const product = await this.productModel.findByPk(id, {
+      include: [Manufacturer, Category],
     });
+
     if (!product) {
       throw new NotFoundException('Product not found');
     }
@@ -122,7 +120,7 @@ export class ProductService {
       if (!manufacturer) {
         throw new NotFoundException('Manufacturer not found');
       }
-      product.manufacturer = manufacturer;
+      product.manufacturerId = updateProductDto.manufacturerId;
     }
 
     if (updateProductDto.categoryId) {
@@ -132,14 +130,15 @@ export class ProductService {
       if (!category) {
         throw new NotFoundException('Category not found');
       }
-      product.category = category;
+      product.categoryId = updateProductDto.categoryId;
     }
 
-    return this.productRepository.save(product);
+    await product.save(); // Save the updated product
+    return product;
   }
 
   async deleteProductById(id: string): Promise<void> {
-    const product = await this.productRepository.findOne({ where: { id } });
+    const product = await this.productModel.findByPk(id);
     if (!product) {
       throw new NotFoundException('Product not found');
     }
@@ -147,6 +146,6 @@ export class ProductService {
     // Trigger the order update before product removal
     await this.orderService.updateOrdersAfterProductDeletion(id);
 
-    await this.productRepository.remove(product);
+    await product.destroy(); // Remove the product
   }
 }

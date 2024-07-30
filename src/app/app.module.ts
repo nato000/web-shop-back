@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductModule } from 'src/product/product.module';
 import { CategoryModule } from 'src/category/category.module';
 import { ManufacturerModule } from 'src/manufacturer/manufacturer.module';
@@ -13,20 +12,12 @@ import { AuthControllerModule } from 'src/auth/auth.controller.module';
 import { ResetTokenModule } from 'src/reset-token/reset-token.module';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from 'src/roles/guards/roles.guard';
+import { sequelizeConfig } from 'src/configs/database.config';
+import { SequelizeModule } from '@nestjs/sequelize';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: `${process.env.POSTGRES_HOST}`,
-      port: 5432,
-      username: `${process.env.POSTGRES_USER}`,
-      password: `${process.env.POSTGRES_PASSWORD}`,
-      database: `${process.env.POSTGRES_NAME}`,
-      // entities: [Product, Category, Manufacturer, Client],
-      synchronize: true,
-      autoLoadEntities: true,
-    }),
+    SequelizeModule.forRoot(sequelizeConfig),
     ProductModule,
     CategoryModule,
     ManufacturerModule,

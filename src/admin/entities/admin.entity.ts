@@ -1,20 +1,37 @@
-import { Exclude } from 'class-transformer';
+import { Table, Column } from 'sequelize-typescript';
 import { CoreEntity } from 'src/app/entities/core.entity';
 import { Role } from 'src/roles/enums/role.enum';
-import { Column, Entity } from 'typeorm';
 
-@Entity({ name: 'AdminUser' })
+@Table({ tableName: 'AdminUser' })
 export class AdminUser extends CoreEntity {
-  @Column({ type: 'varchar', nullable: true })
+  @Column({
+    type: 'varchar',
+    allowNull: true,
+  })
   username: string;
 
-  @Column({ type: 'varchar', nullable: false })
+  @Column({
+    type: 'varchar',
+    allowNull: false,
+  })
   email: string;
 
-  @Exclude()
-  @Column({ type: 'varchar', nullable: false })
+  @Column({
+    type: 'varchar',
+    allowNull: false,
+  })
   password: string;
 
-  @Column({ type: 'simple-array', nullable: false })
+  @Column({
+    type: 'varchar', // Consider using 'jsonb' or array type if supported
+    allowNull: false,
+    get() {
+      const roles = this.getDataValue('roles');
+      return roles ? (roles.split(';') as Role[]) : [];
+    },
+    set(value: Role[]) {
+      this.setDataValue('roles', value.join(';'));
+    },
+  })
   roles: Role[];
 }

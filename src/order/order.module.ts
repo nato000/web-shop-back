@@ -5,13 +5,13 @@ import { Product } from 'src/product/entities/product.entity';
 import { forwardRef, Module } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductModule } from 'src/product/product.module';
 import { ClientModule } from 'src/client/client.module';
+import { SequelizeModule } from '@nestjs/sequelize';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order, OrderItem, Client, Product]),
+    SequelizeModule.forFeature([Order, OrderItem, Client, Product]),
     forwardRef(() => ProductModule),
     ClientModule,
   ],

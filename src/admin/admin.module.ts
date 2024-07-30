@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminUser } from './entities/admin.entity';
+import { SequelizeModule } from '@nestjs/sequelize';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AdminUser])],
+  imports: [SequelizeModule.forFeature([AdminUser])],
   controllers: [AdminController],
   providers: [AdminService],
   exports: [AdminService],

@@ -1,20 +1,25 @@
+// src/app/entities/core.entity.ts
 import {
-  BaseEntity,
-  CreateDateColumn,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
-import { Exclude } from 'class-transformer';
+  Model,
+  Column,
+  CreatedAt,
+  UpdatedAt,
+  PrimaryKey,
+  Default,
+} from 'sequelize-typescript';
 import { v4 as uuidv4 } from 'uuid';
-export abstract class CoreEntity extends BaseEntity {
-  @PrimaryGeneratedColumn('uuid')
-  public id: string = uuidv4();
 
-  @Exclude()
-  @CreateDateColumn({ type: 'timestamp with time zone', name: 'create_at' })
-  public createdAt: Date;
+export abstract class CoreEntity extends Model {
+  @PrimaryKey
+  @Default(uuidv4)
+  @Column
+  id: string;
 
-  @Exclude()
-  @UpdateDateColumn({ type: 'timestamp with time zone', name: 'update_at' })
-  public updateAt: Date;
+  @CreatedAt
+  @Column
+  createdAt: Date;
+
+  @UpdatedAt
+  @Column
+  updatedAt: Date;
 }

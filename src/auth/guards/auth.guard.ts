@@ -1,11 +1,10 @@
 import {
+  Injectable,
   CanActivate,
   ExecutionContext,
-  Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Request } from 'express';
 import { jwtConstants } from '../constants/auth.constansts';
 
 @Injectable()
@@ -16,33 +15,26 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
     if (!token) {
-      console.error('No token found in headers:', request.headers); // Debugging
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('No token found in headers');
     }
+
     try {
       const payload = await this.jwtService.verifyAsync(token, {
         secret: jwtConstants.secret,
       });
-      console.log('JWT Payload:', payload); // Debugging
-      request['user'] = payload; // Set user object including roles
-      console.log('User set in request:', request['user']); // Debugging
+      request['user'] = payload;
     } catch (err) {
-      console.error('Error verifying token:', err); // Debugging
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Invalid or expired token');
     }
     return true;
   }
 
-  private extractTokenFromHeader(request: Request): string | undefined {
+  private extractTokenFromHeader(request: any): string | undefined {
     const authorization = request.headers.authorization;
-    console.log('Authorization header:', authorization); // Debugging
     if (!authorization) {
       return undefined;
     }
     const [type, token] = authorization.split(' ');
-    if (type !== 'Bearer') {
-      return undefined;
-    }
-    return token;
+    return type === 'Bearer' ? token : undefined;
   }
 }

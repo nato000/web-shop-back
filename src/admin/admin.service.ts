@@ -5,46 +5,43 @@ import {
 } from '@nestjs/common';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
-import { DeleteResult, Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
-import { AdminUser } from './entities/admin.entity';
 import { hashPassword } from 'src/utils/password-hash';
+import { InjectModel } from '@nestjs/sequelize';
+import { AdminUser } from './entities/admin.entity';
 
 @Injectable()
 export class AdminService {
   constructor(
-    @InjectRepository(AdminUser)
-    private readonly adminRepository: Repository<AdminUser>,
+    @InjectModel(AdminUser)
+    private readonly adminUserModel: typeof AdminUser,
   ) {}
 
   public async findCurrentUser(adminId: string) {
     const admin = await this.getAdminById(adminId);
-    delete admin.password;
     if (!admin) {
       throw new NotFoundException(`Admin is not found`);
     }
+    delete admin.password;
     return admin;
   }
 
   async getAllAdmins(): Promise<AdminUser[]> {
-    return await this.adminRepository.find();
+    return this.adminUserModel.findAll();
   }
 
   async getAdminById(id: string): Promise<AdminUser> {
-    return await this.adminRepository.findOne({
-      where: {
-        id: id,
-      },
-    });
+    const admin = await this.adminUserModel.findByPk(id);
+    if (!admin) {
+      throw new NotFoundException('Admin not found');
+    }
+    return admin;
   }
 
-  async createAdminUser(createAdminDto: CreateAdminDto) {
+  async createAdminUser(createAdminDto: CreateAdminDto): Promise<AdminUser> {
     const { username, email, password, roles } = createAdminDto;
 
-    const existingAdmin = await this.adminRepository.findOne({
-      where: {
-        email: email,
-      },
+    const existingAdmin = await this.adminUserModel.findOne({
+      where: { email },
     });
 
     if (existingAdmin) {
@@ -53,19 +50,19 @@ export class AdminService {
 
     const hashedPassword = await hashPassword(password);
 
-    const admin = this.adminRepository.create({
-      username: username,
-      email: email,
+    const admin = await this.adminUserModel.create({
+      username,
+      email,
       password: hashedPassword,
-      roles: roles,
+      roles,
     });
-    console.log('ok');
-    return this.adminRepository.save(admin);
+
+    return admin;
   }
 
-  async findByEmail(email: string): Promise<AdminUser | undefined> {
-    const admin = await this.adminRepository.findOneBy({
-      email: email,
+  async findByEmail(email: string): Promise<AdminUser> {
+    const admin = await this.adminUserModel.findOne({
+      where: { email },
     });
     if (!admin) {
       throw new NotFoundException('Email not found');
@@ -73,43 +70,40 @@ export class AdminService {
     return admin;
   }
 
-  async updateAdminById(id: string, updateAdminDto: UpdateAdminDto) {
-    const admin = await this.adminRepository.findOne({
-      where: { id: id },
-    });
-    if (!admin) {
-      throw new NotFoundException('Admin not found');
-    }
+  async updateAdminById(
+    id: string,
+    updateAdminDto: UpdateAdminDto,
+  ): Promise<AdminUser> {
+    const admin = await this.getAdminById(id);
 
     if (updateAdminDto.username) {
       admin.username = updateAdminDto.username;
     }
     if (updateAdminDto.password) {
-      admin.password = updateAdminDto.password;
+      admin.password = await hashPassword(updateAdminDto.password);
+    }
+    if (updateAdminDto.roles) {
+      admin.roles = updateAdminDto.roles;
     }
 
-    return this.adminRepository.save(admin);
+    await admin.save();
+    return admin;
   }
 
-  async updateAdminPasswordById(id: string, password: string) {
-    const admin = await this.adminRepository.findOne({
-      where: { id: id },
-    });
+  async updateAdminPasswordById(
+    id: string,
+    password: string,
+  ): Promise<AdminUser> {
+    const admin = await this.getAdminById(id);
 
-    if (!admin) {
-      throw new NotFoundException('Admin not found');
-    }
     admin.password = await hashPassword(password);
 
-    return this.adminRepository.save(admin);
+    await admin.save();
+    return admin;
   }
 
-  async deleteAdminById(id: string): Promise<DeleteResult> {
-    const result = await this.adminRepository.delete(id);
-
-    if (result.affected === 0) {
-      throw new NotFoundException('Admin not found');
-    }
-    return result;
+  async deleteAdminById(id: string): Promise<void> {
+    const admin = await this.getAdminById(id);
+    await admin.destroy();
   }
 }

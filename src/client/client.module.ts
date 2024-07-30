@@ -2,16 +2,16 @@ import { Module } from '@nestjs/common';
 import { ClientService } from './client.service';
 import { ClientController } from './client.controller';
 import { Client } from './entities/client.entity';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { Order } from 'src/order/entities/order.entity';
+import { SequelizeModule } from '@nestjs/sequelize';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Client]),
-    TypeOrmModule.forFeature([Order]),
+    SequelizeModule.forFeature([Client]),
+    SequelizeModule.forFeature([Order]),
   ],
   controllers: [ClientController],
   providers: [ClientService],
-  exports: [TypeOrmModule, ClientService],
+  exports: [ClientService],
 })
 export class ClientModule {}

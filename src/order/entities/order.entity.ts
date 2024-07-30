@@ -1,19 +1,30 @@
-import { Column, Entity, ManyToOne, OneToMany, Relation } from 'typeorm';
+// src/order/entities/order.entity.ts
+import {
+  Table,
+  Column,
+  ForeignKey,
+  BelongsTo,
+  HasMany,
+} from 'sequelize-typescript';
 import { CoreEntity } from 'src/app/entities/core.entity';
 import { Client } from 'src/client/entities/client.entity';
 import { OrderItem } from './order-item.entity';
 
-@Entity({ name: 'Order' })
+@Table({ tableName: 'orders' })
 export class Order extends CoreEntity {
-  @Column({ type: 'varchar', nullable: false })
+  @Column({ allowNull: false })
   status: string;
 
-  @ManyToOne(() => Client, (client) => client.orders)
+  @ForeignKey(() => Client)
+  @Column
+  clientId: string;
+
+  @BelongsTo(() => Client)
   client: Client;
 
-  @OneToMany(() => OrderItem, (orderItem) => orderItem.order, { cascade: true })
-  orderItems: Relation<OrderItem[]>;
+  @HasMany(() => OrderItem)
+  orderItems: OrderItem[];
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ allowNull: true })
   total: string;
 }

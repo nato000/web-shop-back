@@ -1,43 +1,50 @@
-import { Entity, Column, ManyToOne, OneToMany } from 'typeorm';
+// src/product/entities/product.entity.ts
+import {
+  Table,
+  Column,
+  ForeignKey,
+  BelongsTo,
+  HasMany,
+} from 'sequelize-typescript';
 import { CoreEntity } from 'src/app/entities/core.entity';
 import { Category } from 'src/category/entities/category.entity';
 import { Manufacturer } from 'src/manufacturer/entities/manufacturer.entity';
-import { Exclude } from 'class-transformer';
 import { OrderItem } from 'src/order/entities/order-item.entity';
 
-@Entity({ name: 'Product' })
+@Table({ tableName: 'products' })
 export class Product extends CoreEntity {
-  @Column({ type: 'varchar', nullable: false })
+  @Column({ allowNull: false })
   name: string;
 
-  @Column({ type: 'varchar', nullable: false })
+  @Column({ allowNull: false })
   description: string;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column
   imagePath: string;
 
-  @Column({ type: 'varchar', nullable: false })
+  @Column({ allowNull: false })
   currency: string;
 
-  @Column({ type: 'numeric', nullable: false })
+  @Column({ allowNull: false, type: 'DECIMAL' })
   price: number;
 
-  @Exclude()
-  @Column({ type: 'bytea', nullable: true })
+  @Column('bytea')
   imageData: Buffer;
 
-  @ManyToOne(() => Manufacturer, (manufacturer) => manufacturer.products, {
-    onDelete: 'CASCADE',
-  })
+  @ForeignKey(() => Manufacturer)
+  @Column
+  manufacturerId: string;
+
+  @BelongsTo(() => Manufacturer)
   manufacturer: Manufacturer;
 
-  @ManyToOne(() => Category, (category) => category.products, {
-    onDelete: 'CASCADE',
-  })
+  @ForeignKey(() => Category)
+  @Column
+  categoryId: string;
+
+  @BelongsTo(() => Category)
   category: Category;
 
-  @OneToMany(() => OrderItem, (orderItem) => orderItem.product, {
-    onDelete: 'CASCADE',
-  })
+  @HasMany(() => OrderItem)
   orderItems: OrderItem[];
 }

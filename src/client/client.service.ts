@@ -5,41 +5,38 @@ import {
 } from '@nestjs/common';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Client } from './entities/client.entity';
-import { Repository } from 'typeorm';
+import { InjectModel } from '@nestjs/sequelize';
 import { hashPassword } from 'src/utils/password-hash';
+import { Client } from './entities/client.entity';
 
 @Injectable()
 export class ClientService {
   constructor(
-    @InjectRepository(Client)
-    private clientRepository: Repository<Client>,
+    @InjectModel(Client)
+    private clientModel: typeof Client,
   ) {}
 
   public async findCurrentUser(clientId: string) {
     const client = await this.findOneById(clientId);
-    delete client.password;
     if (!client) {
       throw new NotFoundException(`Client is not found`);
     }
+    delete client.password;
     return client;
   }
 
-  findAll() {
-    return this.clientRepository.find();
+  async findAll() {
+    return this.clientModel.findAll();
   }
 
-  findOneById(id: string) {
-    return this.clientRepository.findOne({
-      where: { id },
-    });
+  async findOneById(id: string) {
+    return this.clientModel.findByPk(id);
   }
 
   async createClient(createClientDto: CreateClientDto) {
     const { name, surname, email, password, roles } = createClientDto;
 
-    const existingClient = await this.clientRepository.findOne({
+    const existingClient = await this.clientModel.findOne({
       where: {
         email: email,
       },
@@ -51,41 +48,38 @@ export class ClientService {
 
     const hashedPassword = await hashPassword(password);
 
-    const client = this.clientRepository.create({
-      name: name,
-      surname: surname,
-      email: email,
+    const client = await this.clientModel.create({
+      name,
+      surname,
+      email,
       password: hashedPassword,
-      roles: roles,
+      roles,
     });
-    console.log('ok');
-    return this.clientRepository.save(client);
+    return client;
   }
 
   async findOneClientById(id: string) {
-    const result = await this.clientRepository.findOne({
-      where: { id },
-    });
-    if (!result) {
+    const client = await this.clientModel.findByPk(id);
+    if (!client) {
       throw new NotFoundException('Client not found');
     }
-    return result;
+    return client;
   }
 
   async findByEmail(email: string): Promise<Client | undefined> {
-    const admin = await this.clientRepository.findOneBy({
-      email: email,
+    const client = await this.clientModel.findOne({
+      where: {
+        email: email,
+      },
     });
-    if (!admin) {
+    if (!client) {
       throw new NotFoundException('Email not found');
     }
-    return admin;
+    return client;
   }
 
   async updateClientById(id: string, updateClientDto: UpdateClientDto) {
-    const client = await this.clientRepository.findOne({
-      where: { id: id },
-    });
+    const client = await this.clientModel.findByPk(id);
     if (!client) {
       throw new NotFoundException('Client not found');
     }
@@ -99,25 +93,27 @@ export class ClientService {
     if (updateClientDto.imagePath) {
       client.imagePath = updateClientDto.imagePath;
     }
-    return this.clientRepository.save(client);
+    await client.save();
+    return client;
   }
 
   async updateClientPasswordById(id: string, password: string) {
-    const client = await this.clientRepository.findOne({
-      where: { id: id },
-    });
-
+    const client = await this.clientModel.findByPk(id);
     if (!client) {
       throw new NotFoundException('Client not found');
     }
     client.password = await hashPassword(password);
-
-    return this.clientRepository.save(client);
+    await client.save();
+    return client;
   }
 
   async deleteClientById(id: string) {
-    const result = await this.clientRepository.delete(id);
-    if (result.affected === 0) {
+    const result = await this.clientModel.destroy({
+      where: {
+        id,
+      },
+    });
+    if (result === 0) {
       throw new NotFoundException('Client not found');
     }
   }
